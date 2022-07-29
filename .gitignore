@@ -1,0 +1,13 @@
+/.vscode
+/EEG
+/EEG Data
+/EGG.zip
+/LU
+/MNIST Data
+/subject_1.pkl
+/subject_2.pkl
+/subject_3.pkl
+/subject_4.pkl
+/subject_5.pkl
+/trainings_RoF
+/__pycache__
