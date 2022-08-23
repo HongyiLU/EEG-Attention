@@ -1,6 +1,7 @@
 from cProfile import label
 import os
 from pickletools import optimize
+from sched import scheduler
 from turtle import color
 import numpy as np
 from sklearn.metrics import ConfusionMatrixDisplay, confusion_matrix
@@ -9,12 +10,14 @@ import torch
 import torch.nn as nn
 from torch.nn import CrossEntropyLoss
 from torch.optim import Adam
+from torch.optim.lr_scheduler import ReduceLROnPlateau
 from torch.utils.data import DataLoader
 from dataloader import create_dataset
 
 from model.vit_mnist import ViT
 import matplotlib.pyplot as plt
 from tqdm import tqdm
+import datetime
 
 # Device configuration
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -23,30 +26,33 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 image_height = 16 
 image_width = 14
 #seperated patch size
-patch_height = 8 
+patch_height = 8
 patch_width = 7
 #num of classes
 num_classes = 3 
 #dim of linear layer
-dim = 128 
+dim = 128
 #num of transformer block
-depth = 6 
+depth = 4       
 #num of heads
-heads = 8 
+heads = 4      
 #dim of mlp for classifing
-mlp_dim = 128 
+mlp_dim = 64      
 #input channels
 channels = 1 
 #multi head attention dimension
 head_dim = 64 
-batch_size = 128
-dropout = 0.
-emb_dropout = 0.
-num_epochs = 50
-lr = 0.0001
+batch_size = 64   
+dropout = 0.3            
+emb_dropout = 0.0                    
+num_epochs = 150              
+lr = 0.0001                     
 
-model_name = 'Epochs[{}]_Lr[{}]_Dropout[{}]_Batch[{}]_Dim[{}]_Depth[{}]_Heads[{}]_HDim[{}]_MlpDim[{}]'.format(
-    num_epochs, lr, dropout, batch_size, dim, depth, heads, head_dim, mlp_dim)
+
+time = datetime.datetime.now().strftime('%d-%H-%M')
+print(time)
+model_name = 'Epochs[{}]_Lr[{}]_Dropout[{}]_Batch[{}]_Dim[{}]_Depth[{}]_Heads[{}]_HDim[{}]_MlpDim[{}]_Time[{}]'.format(
+    num_epochs, lr, dropout, batch_size, dim, depth, heads, head_dim, mlp_dim, time)
 working_dir = './trainings_RoF/' + model_name
 best_model_dir = working_dir + '/best_checkpoint/'
 best_model_path = best_model_dir + '/best_model.pt'
@@ -55,11 +61,13 @@ train_loss_his = []
 val_loss_his = []
 #Train fucntion
 def train(num_epochs, train_loader, val_loader, criterion, optimizer, model):
+    val_loss_min = 10000.0
     model.train()
-    
+    scheduler = ReduceLROnPlateau(optimizer=optimizer, mode='min', factor=0.5, patience=20 , verbose=True, min_lr=0.00001)
     for epoch in range(num_epochs):
         train_loss = 0.0
         val_loss = 0.0
+        
         val_true = 0
         train_loop = tqdm(train_loader, unit='batch', total=len(train_loader))
         
@@ -95,9 +103,21 @@ def train(num_epochs, train_loader, val_loader, criterion, optimizer, model):
 
         train_loss = train_loss / len(train_loader)
         val_loss = val_loss / len(val_loader)
-
+        scheduler.step(val_loss)
         train_loss_his.append(train_loss)
         val_loss_his.append(val_loss)
+
+        checkpoint = {
+            'epoch' : epoch + 1,
+            'val_loss_min' : val_loss,
+            'state_dir' : model.state_dict(),
+            'optimizer': optimizer.state_dict()
+        }
+
+        if val_loss <= val_loss_min:
+            print('Validation loss decreased ({:.6f} --> {:.6f}). Saving model ...'.format(val_loss_min, val_loss))
+            torch.save(checkpoint, best_model_path)
+            val_loss_min = val_loss
     return model
 
 #Evaluate fucntion
@@ -147,6 +167,7 @@ def plot():
     plt.xlabel('Epochs')
     plt.ylabel('Loss')
     plt.savefig(working_dir + '/loss.png')
+
 
 if __name__ == '__main__':
     if not os.path.isdir(working_dir):
