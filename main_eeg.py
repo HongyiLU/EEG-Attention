@@ -23,10 +23,10 @@ import datetime
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 #input size
-image_height = 16 
+image_height = 36 
 image_width = 14
 #seperated patch size
-patch_height = 8
+patch_height = 4
 patch_width = 7
 #num of classes
 num_classes = 3 
@@ -35,18 +35,16 @@ dim = 128
 #num of transformer block
 depth = 4       
 #num of heads
-heads = 4      
+heads = 8      
 #dim of mlp for classifing
-mlp_dim = 64      
-#input channels
-channels = 1 
+mlp_dim = 32      
 #multi head attention dimension
 head_dim = 64 
 batch_size = 64   
 dropout = 0.3            
 emb_dropout = 0.0                    
-num_epochs = 150              
-lr = 0.0001                     
+num_epochs = 200                
+lr = 0.00013                         
 
 
 time = datetime.datetime.now().strftime('%d-%H-%M')
@@ -178,11 +176,11 @@ if __name__ == '__main__':
         raise SystemExit(1)
 
     train_data, val_data, test_data = create_dataset()
-    train_loader = DataLoader(train_data, shuffle=False, batch_size = batch_size)
-    val_loader = DataLoader(val_data, shuffle=False, batch_size = batch_size)
+    train_loader = DataLoader(train_data, shuffle=True, batch_size = batch_size)
+    val_loader = DataLoader(val_data, shuffle=True, batch_size = batch_size)
     test_loader = DataLoader(test_data, shuffle=False, batch_size = batch_size)
     #model
-    model = ViT(image_height, image_width, patch_height, patch_width, num_classes, dim, depth, heads, mlp_dim, channels, head_dim, dropout, emb_dropout)
+    model = ViT(image_height, image_width, patch_height, patch_width, num_classes, dim, depth, heads, mlp_dim, head_dim, dropout, emb_dropout)
     model = model.to(device)
     optimizer = Adam(model.parameters(), lr)
     criterion = CrossEntropyLoss()

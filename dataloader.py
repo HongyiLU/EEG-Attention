@@ -26,7 +26,7 @@ from einops import rearrange
 
 def create_dataset():
 
-    sequence_length = 16
+    sequence_length = 36
     fs = 128 
     n_subjects = 5
     mkpt1 = int(fs*10*60)
@@ -43,7 +43,7 @@ def create_dataset():
     print(subject_map)
 
     channels = ['AF3', 'F7', 'F3', 'FC5', 'T7', 'P7', 'O1', 'O2', 'P8', 'T8', 'FC6', 'F4', 'F8', 'AF4']
-    useful_channels = ['AF3', 'F7', 'F3', 'FC5', 'T7', 'P7', 'O1', 'O2', 'P8', 'T8', 'FC6', 'F4', 'F8', 'AF4']
+    useful_channels = ['F7', 'F3', 'P7', 'O1', 'O2', 'P8', 'AF4']
     use_channel_inds = []
     for c in useful_channels:
         if c in channels:
@@ -84,54 +84,88 @@ def create_dataset():
         data5 = pickle.load(f)
 
     #difine label set and data set     
-    x = list()
-    y = list()   
+    x_train = list()
+    y_train = list()
+    x_val = list()
+    y_val = list()
+    x_test = list()
+    y_test = list()   
 
     for i in range(5):
         for k in data1[f'trial_{i+1}'].keys():
-            for d in data1[f'trial_{i+1}'][k]:
-                x.append(d)
-            for j in range(int(len(data1[f'trial_{i+1}'][k])/sequence_length)):
-                y.append(state_num[k])
-    
+            for f in range(int(len(data1[f'trial_{i+1}'][k])/fs)):
+                for d in range(sequence_length):
+                    x_train.append(data1[f'trial_{i+1}'][k][f*fs+d])
+                y_train.append(state_num[k])
     
     for i in range(5):
         for k in data2[f'trial_{i+1}'].keys():
-            for d in data2[f'trial_{i+1}'][k]:
-                x.append(d)
-            for j in range(int(len(data2[f'trial_{i+1}'][k])/sequence_length)):
-                y.append(state_num[k])
+            for f in range(int(len(data1[f'trial_{i+1}'][k])/fs)):
+                for d in range(sequence_length):
+                    x_train.append(data1[f'trial_{i+1}'][k][f*fs+d])
+                y_train.append(state_num[k])
 
     for i in range(5):
         for k in data3[f'trial_{i+1}'].keys():
-            for d in data3[f'trial_{i+1}'][k]:
-                x.append(d)
-            for j in range(int(len(data3[f'trial_{i+1}'][k])/sequence_length)):
-                y.append(state_num[k])
-    
-    #Wrong data
-    # for i in range(5):
-    #     for k in data4[f'trial_{i+1}'].keys():
-    #         for d in data4[f'trial_{i+1}'][k]:
-    #             x.append(d)
-    #         for j in range(int(len(data4[f'trial_{i+1}'][k])/sequence_length)):
-    #             y.append(state_num[k])
-    
+            for f in range(int(len(data1[f'trial_{i+1}'][k])/fs)):
+                for d in range(sequence_length):
+                    x_train.append(data1[f'trial_{i+1}'][k][f*fs+d])
+                y_train.append(state_num[k])
+
+    for i in range(5):
+        for k in data4[f'trial_{i+1}'].keys():
+            for f in range(int(len(data1[f'trial_{i+1}'][k])/fs)):
+                for d in range(sequence_length):
+                    x_val.append(data1[f'trial_{i+1}'][k][f*fs+d])
+                y_val.append(state_num[k])
+
     for i in range(4):
         for k in data5[f'trial_{i+1}'].keys():
-            for d in data5[f'trial_{i+1}'][k]:
-                x.append(d)
-            for j in range(int(len(data5[f'trial_{i+1}'][k])/sequence_length)):
-                y.append(state_num[k])
+            for f in range(int(len(data1[f'trial_{i+1}'][k])/fs)):
+                for d in range(sequence_length):
+                    x_test.append(data1[f'trial_{i+1}'][k][f*fs+d])
+                y_test.append(state_num[k])
     
-    x_set = np.array(x)
-    print(x_set.shape)
-    x_set = rearrange(x_set, '(b s) c -> b s c', s = sequence_length)
-    x_set = np.expand_dims(x_set, 1).astype(np.float32)
+    # for i in range(5):
+    #     for k in data2[f'trial_{i+1}'].keys():
+    #         for d in data2[f'trial_{i+1}'][k]:
+    #             x.append(d)
+    #         for j in range(int(len(data2[f'trial_{i+1}'][k])/sequence_length)):
+    #             y.append(state_num[k])
+
+    # for i in range(5):
+    #     for k in data3[f'trial_{i+1}'].keys():
+    #         for d in data3[f'trial_{i+1}'][k]:
+    #             x.append(d)
+    #         for j in range(int(len(data3[f'trial_{i+1}'][k])/sequence_length)):
+    #             y.append(state_num[k])
+    
+    # #Wrong data
+    # # for i in range(5):
+    # #     for k in data4[f'trial_{i+1}'].keys():
+    # #         for d in data4[f'trial_{i+1}'][k]:
+    # #             x.append(d)
+    # #         for j in range(int(len(data4[f'trial_{i+1}'][k])/sequence_length)):
+    # #             y.append(state_num[k])
+    
+    # for i in range(4):
+    #     for k in data5[f'trial_{i+1}'].keys():
+    #         for d in data5[f'trial_{i+1}'][k]:
+    #             x.append(d)
+    #         for j in range(int(len(data5[f'trial_{i+1}'][k])/sequence_length)):
+    #             y.append(state_num[k])
+    
+    x_train = np.array(x_train).astype(np.float32)
+    x_val = np.array(x_val).astype(np.float32)
+    x_test = np.array(x_test).astype(np.float32)
+    print(x_train.shape)
+    x_train = rearrange(x_train, '(b s) c -> b s c', s = sequence_length)
+    x_val = rearrange(x_val, '(b s) c -> b s c', s = sequence_length)
+    x_test = rearrange(x_test, '(b s) c -> b s c', s = sequence_length)
     # x_set = x_set.reshape(-1,sequence_length,len(useful_channels))
-    y_set = np.array(y).astype(np.int64)
-    
-    
+    y_train = np.array(y_train).astype(np.int64)
+    y_val = np.array(y_val).astype(np.int64)
+    y_test = np.array(y_test).astype(np.int64)
     # standardization
     # mean = np.mean(x_set)
     # std = np.std(x_set)
@@ -141,15 +175,18 @@ def create_dataset():
     # x_set = x_set[shuffle_index]
     # y_set = y_set[shuffle_index]
     # print(y_set)
-    print(x_set.shape)
-    print(y_set.shape)
+    print(x_train.shape)
+    print(y_train.shape)
     
-    dataset = TensorDataset(torch.from_numpy(x_set), torch.from_numpy(y_set))
+    train_data = TensorDataset(torch.from_numpy(x_train), torch.from_numpy(y_train))
+    val_data = TensorDataset(torch.from_numpy(x_val), torch.from_numpy(y_val))
+    test_data = TensorDataset(torch.from_numpy(x_test), torch.from_numpy(y_test))
     # dataset = MyDataset(x_set, y_set, 128)
-    train_size = int(0.7*len(x_set))
-    val_size = int(0.2*len(x_set))
-    test_size = len(x_set) - train_size - val_size
-    train_data, val_data, test_data = random_split(dataset, [train_size,val_size,test_size], generator=torch.Generator().manual_seed(0))
+    # train_size = int(0.7*len(x_set))
+    # val_size = int(0.2*len(x_set))
+    # test_size = len(x_set) - train_size - val_size
+    # train_data, val_data, test_data = random_split(dataset, [train_size,val_size,test_size], generator=torch.Generator().manual_seed(0))
+    print(len(val_data))
     print(len(test_data))
     return train_data, val_data, test_data
 
